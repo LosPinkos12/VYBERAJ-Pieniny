@@ -13,8 +13,9 @@ def list_files():
     return file_lines
 
 def get_existing_files(target_dir):
-    existing_files = os.listdir(target_dir)
-    return existing_files
+    if not os.path.exists(target_dir):
+        return []
+    return os.listdir(target_dir)
 
 def load_imported_files(file_path):
     imported_files = []
@@ -42,11 +43,13 @@ def count_new_photos(existing_files, imported_files):
     return new_photos_count
 
 def download_photos(existing_files, imported_files):
-    target_dir = 'downloaded_photos'
+    target_dir = 'stiahnute_fotky'
     os.makedirs(target_dir, exist_ok=True)
 
     file_lines = list_files()
     imported_count = 0
+
+    start_time = time.time()  # Record the start time
 
     for file_info in file_lines:
         parts = file_info.split()
@@ -54,50 +57,62 @@ def download_photos(existing_files, imported_files):
         file_name = parts[-1]
 
         if file_name not in existing_files and file_name not in imported_files:
+            # Check if camera is still connected
+            if not is_camera_connected():
+                print("Kamera nie je pripojená. Ukončenie importu.")
+                return imported_count
+
             # Download the file
             download_cmd = ['gphoto2', '--get-file', file_number, '--filename', os.path.join(target_dir, file_name)]
-            subprocess.run(download_cmd)
-            print(f'Downloaded {file_name}')
+            subprocess.run(download_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            #print(f'Stiahnuté {file_name}')
             
             # Rename and move the file
             new_file_name = f"{os.path.splitext(file_name)[0]}.jpg"  # Add .jpg extension
             new_file_path = os.path.join(target_dir, new_file_name)
             os.rename(os.path.join(target_dir, file_name), new_file_path)
-            print(f'Renamed and moved to {new_file_path}')
+            print(f'Presunuté do: {new_file_path}')
 
             imported_files.append(file_name)
             imported_count += 1
 
+    end_time = time.time()  # Record the end time
+    total_time = end_time - start_time  # Calculate the total time taken
+    print(f'Celkový čas importu: {total_time:.2f} sekúnd')
+
     return imported_count
 
 def main():
-    print("Hľadám kameru...")
-
-    target_dir = 'downloaded_photos'
-    imported_files_file = 'imported_files.txt'
+    target_dir = 'stiahnute_fotky'
+    imported_files_file = 'importovane_fotky.txt'
     existing_files = get_existing_files(target_dir)
     imported_files = load_imported_files(imported_files_file)
 
     while True:
         if is_camera_connected():
-            print("Kamera je pripojená...")
-
             # Count new photos before asking for import
             new_photos_count = count_new_photos(existing_files, imported_files)
-            print(f"Chceš importovať {new_photos_count} nových fotiek?")
-
-            user_input = input("Stlač (Enter), keď nie stlač hocičo a potom enter").strip().lower()
-            if user_input == '':
-                imported_count = download_photos(existing_files, imported_files)
-                print(f'Importoval si {imported_count} nových fotiek.')
-
-                # Save imported files to file
-                save_imported_files(imported_files_file, imported_files)
+            if new_photos_count == 0:
+                print("Dostupných 0 nových fotiek na import.")
             else:
-                print("Žiadne fotky sa neimportovali")
+                print("Kamera je pripojená.")
+                print(f"Dostupných {new_photos_count} nových fotiek na import.")
+
+                user_input = input("Stlač (enter) pre import fotiek.").strip().lower()
+                print()
+                if user_input == '':
+                    imported_count = download_photos(existing_files, imported_files)
+                    print(f'Importovalo {imported_count} nových fotiek, LAČES.')
+                    print()
+
+                    # Save imported files to file
+                    save_imported_files(imported_files_file, imported_files)
+                else:
+                    print("Neimportovalo žiadne fotky.")
         else:
-            print("Camera nie je pripojená")
-            time.sleep(1)  # Delay to prevent rapid looping
+            print("Kamera nie je pripojená.")
+        
+        time.sleep(1)  # Delay to prevent rapid looping and to give time for user action
 
 if __name__ == '__main__':
     main()
