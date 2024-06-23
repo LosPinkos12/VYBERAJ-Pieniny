@@ -1,4 +1,3 @@
-
 import subprocess
 import time
 import os
@@ -12,9 +11,13 @@ def is_camera_connected():
     # Ak existuje aspoň jedno zariadenie Canon EOS R6, považujeme kameru za pripojenú
     return len(cameras) > 0
 
-def list_files():
-    # Simulácia získania zoznamu súborov
-    return ["#1 IMG_0001.CR2", "#2 IMG_0002.CR2", "#3 IMG_0003.CR2"]
+def list_files_from_camera():
+    # Predpokladáme, že súbory budú v adresári 'source_directory' na kamere Canon EOS R6
+    source_dir = 'source_directory'
+    if os.path.exists(source_dir):
+        return os.listdir(source_dir)
+    else:
+        return []
 
 def get_existing_files(target_dir):
     if not os.path.exists(target_dir):
@@ -34,13 +37,10 @@ def save_imported_files(file_path, imported_files):
             file.write(file_name + '\n')
 
 def count_new_photos(existing_files, imported_files):
-    file_lines = list_files()
+    file_names = list_files_from_camera()
     new_photos_count = 0
 
-    for file_info in file_lines:
-        parts = file_info.split()
-        file_name = parts[-1]
-
+    for file_name in file_names:
         if file_name not in existing_files and file_name not in imported_files:
             new_photos_count += 1
 
@@ -50,16 +50,12 @@ def download_photos(existing_files, imported_files):
     target_dir = 'stiahnute_fotky'
     os.makedirs(target_dir, exist_ok=True)
 
-    file_lines = list_files()
+    file_names = list_files_from_camera()
     imported_count = 0
 
     start_time = time.time()  # Record the start time
 
-    for file_info in file_lines:
-        parts = file_info.split()
-        file_number = parts[0][1:]  # Remove the leading '#'
-        file_name = parts[-1]
-
+    for file_name in file_names:
         if file_name not in existing_files and file_name not in imported_files:
             # Check if camera is still connected
             if not is_camera_connected():
@@ -101,7 +97,7 @@ def main():
                 print()
                 if user_input == '':
                     imported_count = download_photos(existing_files, imported_files)
-                    print(f'Importovalo {imported_count} nových fotiek, LAČES.')
+                    print(f'Importovalo {imported_count} nových fotiek.')
                     print()
 
                     # Save imported files to file
