@@ -113,4 +113,10 @@ def main():
         time.sleep(1)  # Delay to prevent rapid looping and to give time for user action
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"Nastala chyba: {str(e)}")
+    
+    # Pauza na konci, aby ste si stihli prečítať chybové hlásenie
+    input("Stlačte Enter pre ukončenie programu...")
