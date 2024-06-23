@@ -1,24 +1,34 @@
-import win32api
-import win32con
-import win32com.client
+import os
+import shutil
 
-def is_camera_connected():
-    # GUID pre USB zariadenia
-    usb_guid = "{A5DCBF10-6530-11D2-901F-00C04FB951ED}"
-    
-    # Získanie zoznamu pripojených USB zariadení
-    devices = win32com.client.Dispatch("WbemScripting.SWbemLocator").ConnectServer(".").ExecQuery(
-        "SELECT * FROM Win32_PnPEntity WHERE ClassGuid = '" + usb_guid + "'")
-    
-    # Prehľadávanie zoznamu zariadení a hľadanie kamerového zariadenia
-    for device in devices:
-        if "Canon EOS R6" in str(device.Caption):
-            return True  # Nájdená kamera Canon EOS R6
-    
-    return False  # Kamera Canon EOS R6 nie je pripojená
+def copy_files_from_camera(source_dir, target_dir):
+    # List files in source directory
+    try:
+        files = os.listdir(source_dir)
+    except FileNotFoundError:
+        print(f"Source directory '{source_dir}' not found or inaccessible.")
+        return
 
-# Testovanie funkcie is_camera_connected()
-if is_camera_connected():
-    print("Kamera Canon EOS R6 je pripojená.")
-else:
-    print("Kamera Canon EOS R6 nie je pripojená.")
+    # Create target directory if it doesn't exist
+    os.makedirs(target_dir, exist_ok=True)
+
+    # Copy each file from source to target directory
+    for file_name in files:
+        source_path = os.path.join(source_dir, file_name)
+        dest_path = os.path.join(target_dir, file_name)
+        try:
+            shutil.copy(source_path, dest_path)
+            print(f"Copied file: {file_name}")
+        except FileNotFoundError:
+            print(f"File '{file_name}' not found or inaccessible.")
+
+def main():
+    # Define source and target directories
+    source_directory = r"ThisPC\Canon EOS R6\SD1\DCIM\100CANON"
+    target_directory = r"C:\Users\YourUsername\Pictures\imported_photos"
+
+    # Copy files from source to target directory
+    copy_files_from_camera(source_directory, target_directory)
+
+if __name__ == "__main__":
+    main()
