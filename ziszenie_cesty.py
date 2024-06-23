@@ -30,19 +30,21 @@ def list_files_from_camera():
         except Exception as e:
             print(f"Chyba pri prehľadávaní zariadenia: {str(e)}")
 
-    return file_list
+    return file_list, device_id if devices else None
 
 def main():
     if is_camera_connected():
-        files = list_files_from_camera()
+        files, device_id = list_files_from_camera()
         if len(files) > 0:
             print("Nájdené súbory a priecinky na fotoaparáte Canon EOS R6:")
             for file in files:
                 print(file)
         else:
-            print("Žiadne súbory alebo priecinky na fotoaparáte Canon EOS R6.")
+            print(f"Na zariadení s ID '{device_id}' nie sú žiadne súbory alebo priecinky.")
     else:
         print("Fotoaparát Canon EOS R6 nie je pripojený.")
+
+    input("Stlačte Enter pre ukončenie skriptu...")
 
 if __name__ == "__main__":
     main()
