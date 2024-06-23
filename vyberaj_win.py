@@ -11,20 +11,18 @@ def is_camera_connected():
     try:
         # Získanie zoznamu pripojených zariadení USB
         drives = win32file.GetLogicalDrives()
-        for drive in drives:
-            drive_name = f"{drive}:\\"
-            drive_type = win32file.GetDriveType(drive_name)
-            if drive_type == win32file.DRIVE_REMOVABLE:
-                # Otestuje sa, či je to zariadenie Canon (môžete upraviť podľa potreby)
-                if "Canon" in win32file.GetVolumeInformation(drive_name)[0]:
-                    return True
-        return False
+        for i in range(1, 26):
+            if drives & (1 << i):
+                drive_letter = chr(65 + i) + ':\\'
+                drive_type = win32file.GetDriveType(drive_letter)
+                if drive_type == win32file.DRIVE_REMOVABLE:
+                    volume_info = win32file.GetVolumeInformation(drive_letter)
+                    if "Canon" in volume_info[0]:
+                        return drive_letter
+        return None
     except Exception as e:
         print(f"Chyba pri kontrole pripojených zariadení: {e}")
-        return False
-
-def list_files():
-    # Funkcia pre získanie zoznamu súborov na zariadení (nepoužíva sa pri tomto prístupe)
+        return None
 
 def get_existing_files(target_dir):
     if not os.path.exists(target_dir):
@@ -43,36 +41,16 @@ def save_imported_files(file_path, imported_files):
         for file_name in imported_files:
             file.write(file_name + '\n')
 
-def count_new_photos(existing_files, imported_files):
-    # Počítanie nových fotiek (nepoužíva sa pri tomto prístupe)
-
-def download_photos(existing_files, imported_files):
+def download_photos(drive_letter, existing_files, imported_files):
+    source_dir = f"{drive_letter}\\DCIM\\100CANON"  # Príklad cesty, môžete upraviť podľa potreby
     target_dir = 'stiahnute_fotky'
     os.makedirs(target_dir, exist_ok=True)
 
     try:
-        # Získa sa pripojené zariadenie
-        drive_letter = None
-        drives = win32file.GetLogicalDrives()
-        for drive in drives:
-            drive_name = f"{drive}:\\"
-            drive_type = win32file.GetDriveType(drive_name)
-            if drive_type == win32file.DRIVE_REMOVABLE:
-                if "Canon" in win32file.GetVolumeInformation(drive_name)[0]:
-                    drive_letter = drive
-                    break
-        
-        if not drive_letter:
-            print("Canon EOS R6 nie je pripojený.")
-            return 0
-        
-        # Prekopírovanie fotiek do cieľového adresára
-        source_dir = f"{drive_letter}:\\DCIM\\100CANON"  # Príklad cesty, môžete upraviť podľa potreby
         for filename in os.listdir(source_dir):
-            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')) and filename not in imported_files:
                 shutil.copy(os.path.join(source_dir, filename), os.path.join(target_dir, filename))
                 print(f'Presunuté do: {os.path.join(target_dir, filename)}')
-
                 imported_files.append(filename)
 
         return len(imported_files)
@@ -87,10 +65,11 @@ def main():
     imported_files = load_imported_files(imported_files_file)
 
     while True:
-        if is_camera_connected():
+        drive_letter = is_camera_connected()
+        if drive_letter:
             user_input = input("Kamera je pripojená. Stlač (enter) pre import fotiek alebo 'q' pre ukončenie: ").strip().lower()
             if user_input == '':
-                imported_count = download_photos(imported_files)
+                imported_count = download_photos(drive_letter, target_dir, imported_files)
                 print(f'Importovalo {imported_count} nových fotiek.')
                 save_imported_files(imported_files_file, imported_files)
             elif user_input == 'q':
@@ -98,7 +77,7 @@ def main():
         else:
             print("Kamera nie je pripojená.")
         
-        time.sleep(1)
+        time.sleep(5)
 
 if __name__ == '__main__':
     main()
