@@ -2,20 +2,19 @@
 import subprocess
 import time
 import os
-import win32api
-import win32con
+import shutil
 import win32com.client
 
 def is_camera_connected():
-    # Implementácia kontroly pripojenia kamery na Windows
-    return False  # Tento kód musíš implementovať na základe informácií z operačného systému
+    wmi = win32com.client.GetObject("winmgmts:")
+    cameras = wmi.ExecQuery("SELECT * FROM Win32_PnPEntity WHERE Caption LIKE '%Canon EOS R6%'")
+
+    # Ak existuje aspoň jedno zariadenie Canon EOS R6, považujeme kameru za pripojenú
+    return len(cameras) > 0
 
 def list_files():
-    # Implementácia na zoznam súborov pomocou príkazu 'dir'
-    result = subprocess.run(['dir', '/b'], capture_output=True, text=True)
-    files = result.stdout.splitlines()
-    file_lines = [line for line in files if line.startswith('#')]
-    return file_lines
+    # Simulácia získania zoznamu súborov
+    return ["#1 IMG_0001.CR2", "#2 IMG_0002.CR2", "#3 IMG_0003.CR2"]
 
 def get_existing_files(target_dir):
     if not os.path.exists(target_dir):
@@ -115,4 +114,10 @@ def main():
         time.sleep(1)  # Delay to prevent rapid looping and to give time for user action
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"Nastala chyba: {str(e)}")
+    
+    # Pauza na konci, aby ste si stihli prečítať chybové hlásenie
+    input("Stlačte Enter pre ukončenie programu...")
