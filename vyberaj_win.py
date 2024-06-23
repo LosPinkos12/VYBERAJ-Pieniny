@@ -1,19 +1,16 @@
-import subprocess
-import time
 import os
 import shutil
+import time
 import win32com.client
 
 def is_camera_connected():
     wmi = win32com.client.GetObject("winmgmts:")
     cameras = wmi.ExecQuery("SELECT * FROM Win32_PnPEntity WHERE Caption LIKE '%Canon EOS R6%'")
-
     # Ak existuje aspoň jedno zariadenie Canon EOS R6, považujeme kameru za pripojenú
     return len(cameras) > 0
 
 def list_files_from_camera():
-    # Predpokladáme, že súbory budú v adresári 'source_directory' na kamere Canon EOS R6
-    source_dir = 'source_directory'
+    source_dir = r'\\.\USB\VID_04A9&PID_32F5\6&2F179182&0&2\SD1\DCIM\100CANON'
     if os.path.exists(source_dir):
         return os.listdir(source_dir)
     else:
@@ -63,11 +60,11 @@ def download_photos(existing_files, imported_files):
                 return imported_count
 
             # Download the file (simulating with copying for example)
-            src_path = os.path.join('source_directory', file_name)
+            src_path = os.path.join(source_dir, file_name)
             dest_path = os.path.join(target_dir, file_name)
             shutil.copy(src_path, dest_path)
             print(f'Stiahnuté {file_name}')
-            
+
             imported_files.append(file_name)
             imported_count += 1
 
@@ -106,7 +103,7 @@ def main():
                     print("Neimportovalo žiadne fotky.")
         else:
             print("Kamera nie je pripojená.")
-        
+
         time.sleep(1)  # Delay to prevent rapid looping and to give time for user action
 
 if __name__ == '__main__':
@@ -114,6 +111,6 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         print(f"Nastala chyba: {str(e)}")
-    
+
     # Pauza na konci, aby ste si stihli prečítať chybové hlásenie
     input("Stlačte Enter pre ukončenie programu...")
