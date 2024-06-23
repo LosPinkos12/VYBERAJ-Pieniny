@@ -1,34 +1,39 @@
-import os
-import shutil
+import usb.core
+import usb.util
 
-def copy_files_from_camera(source_dir, target_dir):
-    # List files in source directory
+# Nájdenie zariadenia Canon EOS R6
+def find_canon_eos():
+    vendor_id = 0x04a9  # ID výrobcu Canon
+    product_id = 0x32fb  # ID produktu pre Canon EOS R6
+
+    device = usb.core.find(idVendor=vendor_id, idProduct=product_id)
+    return device
+
+# Funkcia na čítanie dát z zariadenia
+def read_data(device):
     try:
-        files = os.listdir(source_dir)
-    except FileNotFoundError:
-        print(f"Source directory '{source_dir}' not found or inaccessible.")
-        return
+        # Otvorenie zariadenia
+        device.set_configuration()
+        
+        # Príklad čítania dát
+        endpoint = device[0][(0,0)][0]
+        data = device.read(endpoint.bEndpointAddress, endpoint.wMaxPacketSize)
+        
+        print("Prečítané dáta:", data)
+    except usb.core.USBError as e:
+        print("Chyba pri čítaní dát:", e)
 
-    # Create target directory if it doesn't exist
-    os.makedirs(target_dir, exist_ok=True)
-
-    # Copy each file from source to target directory
-    for file_name in files:
-        source_path = os.path.join(source_dir, file_name)
-        dest_path = os.path.join(target_dir, file_name)
-        try:
-            shutil.copy(source_path, dest_path)
-            print(f"Copied file: {file_name}")
-        except FileNotFoundError:
-            print(f"File '{file_name}' not found or inaccessible.")
-
+# Hlavná funkcia
 def main():
-    # Define source and target directories
-    source_directory = r"ThisPC\Canon EOS R6\SD1\DCIM\100CANON"
-    target_directory = r"C:\Users\YourUsername\Pictures\imported_photos"
+    device = find_canon_eos()
+    if device is None:
+        print("Fotoaparát Canon EOS R6 nebol nájdený.")
+        return
+    
+    print("Fotoaparát Canon EOS R6 bol úspešne nájdený.")
+    
+    # Tu môžete volať ďalšie funkcie na prácu so zariadením, napr. read_data(device)
+    # Zabezpečte, aby ste zavolali usb.util.dispose_resources(device) na konci práce so zariadením.
 
-    # Copy files from source to target directory
-    copy_files_from_camera(source_directory, target_directory)
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
